@@ -1,0 +1,13 @@
+[package]
+name = "keylogger"
+authors = ["smukx"]
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+chrono = "0.4.35"
+hostname = "0.3.1"
+os_info = "3.8.0"
+winapi = { version = "0.3.9", features = ["winuser", "winnt", "processthreadsapi", "psapi", "winnls"] }
