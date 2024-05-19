@@ -1,0 +1,10 @@
+[package]
+name = "rev_receive"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+base64 = "0.22.1"
+tokio = { version = "1.37.0" , features = ["full"] }
