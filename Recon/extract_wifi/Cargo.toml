@@ -1,0 +1,12 @@
+[package]
+name = "extract_wifi"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+winapi = { version = "0.3.9", features = ["winuser","wlanapi","setupapi","winnls","fileapi","sysinfoapi" ,"debugapi","winerror", "wininet" , "winhttp" ,"synchapi","securitybaseapi","wincrypt","psapi", "tlhelp32", "heapapi","shellapi", "memoryapi", "processthreadsapi", "errhandlingapi", "winbase", "handleapi", "synchapi"] }
+env_logger = "0.11.3"
+log = "0.4.21"
+quick-xml = "0.31.0"
+widestring = "1.1.0"
+
