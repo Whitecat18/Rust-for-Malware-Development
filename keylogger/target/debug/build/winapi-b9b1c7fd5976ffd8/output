@@ -1,0 +1,3 @@
+cargo:rerun-if-changed=build.rs
+cargo:rerun-if-env-changed=WINAPI_NO_BUNDLED_LIBRARIES
+cargo:rerun-if-env-changed=WINAPI_STATIC_NOBUNDLE

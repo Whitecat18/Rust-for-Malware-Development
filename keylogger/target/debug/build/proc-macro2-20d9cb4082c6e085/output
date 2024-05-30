@@ -1,0 +1,3 @@
+cargo:rerun-if-changed=build/probe.rs
+cargo:rustc-cfg=wrap_proc_macro
+cargo:rerun-if-env-changed=RUSTC_BOOTSTRAP
