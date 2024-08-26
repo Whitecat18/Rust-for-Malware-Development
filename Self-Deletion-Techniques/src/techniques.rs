@@ -1,0 +1,242 @@
+use std::ptr::null_mut;
+use std::ffi::OsStr;
+use std::os::windows::ffi::OsStrExt;
+use winapi::um::winbase::MoveFileExW;
+use winapi::um::winbase::MOVEFILE_DELAY_UNTIL_REBOOT;
+
+// Code 1
+pub(crate) fn schedule_self_delete() {
+    let exe_path = std::env::current_exe().unwrap();
+    let exe_path_wide: Vec<u16> = OsStr::new(exe_path.to_str().unwrap())
+        .encode_wide()
+        .chain(Some(0).into_iter())
+        .collect();
+
+    unsafe {
+        MoveFileExW(
+            exe_path_wide.as_ptr(),
+            null_mut(),
+            MOVEFILE_DELAY_UNTIL_REBOOT,
+        );
+    }
+}
+
+// Code 2
+
+use std::env;
+use std::fs::File;
+use std::io::Write;
+use std::process::Command;
+use std::thread;
+use std::time::Duration;
+
+pub(crate) fn create_batch_file() -> std::io::Result<()>{
+    let exe_path = env::current_exe()?.display().to_string();
+    let batch_content = format!(
+        "@echo off\n\
+         timeout /t 3 /nobreak > NUL\n\
+         del \"{}\"",
+        exe_path
+    );
+
+    let batch_file = "self_delete.bat";
+    let mut file = File::create(batch_file)?;
+    file.write_all(batch_content.as_bytes())?;
+
+    // Execute the batch file
+    Command::new("cmd")
+        .args(&["/C", batch_file])
+        .spawn()?;
+
+    // Give some time for the batch file to execute before the Rust program exits
+    thread::sleep(Duration::from_secs(1));
+
+    Ok(())
+}
+
+pub(crate) fn cmd_timeout(){
+    let exe_path = std::env::current_exe().unwrap().display().to_string();
+
+    std::process::Command::new("cmd")
+        .args(&["/C", "timeout", "/t", "2", "&&", "del", &exe_path])
+        .spawn().expect("Error");
+}
+
+// Code 4
+
+use std::ffi::CString;
+
+
+#[allow(non_snake_case)]
+pub(crate) fn del_CreateProcessA() {
+    let exe_path = std::env::current_exe().unwrap().display().to_string();
+    let command = format!("cmd /C del \"{}\"", exe_path);
+
+    let command_cstring = std::ffi::CString::new(command).unwrap();
+    unsafe {
+        let mut startup_info: winapi::um::processthreadsapi::STARTUPINFOA = std::mem::zeroed();
+        let mut process_info: winapi::um::processthreadsapi::PROCESS_INFORMATION = std::mem::zeroed();
+        winapi::um::processthreadsapi::CreateProcessA(
+            std::ptr::null_mut(),
+            command_cstring.into_raw(),
+            std::ptr::null_mut(),
+            std::ptr::null_mut(),
+            false as i32,
+            0,
+            std::ptr::null_mut(),
+            std::ptr::null_mut(),
+            &mut startup_info,
+            &mut process_info,
+        );
+    }
+}
+
+// Code 5
+
+use winapi::um::shellapi::{
+    SHFileOperationW,  
+    SHFILEOPSTRUCTW
+};
+
+
+
+pub(crate) fn delete_file_immediately() {
+    let exe_path = std::env::current_exe().unwrap();
+    let exe_path_wide: Vec<u16> = OsStr::new(exe_path.to_str().unwrap())
+        .encode_wide()
+        .chain(Some(0).into_iter())
+        .collect();
+
+    let mut file_op = SHFILEOPSTRUCTW {
+        hwnd: null_mut(),
+        wFunc: 0x0003, // FO_DELETE
+        pFrom: exe_path_wide.as_ptr(),
+        pTo: null_mut(),
+        fFlags: 0x0010 | 0x0040, // FOF_NOCONFIRMATION | FOF_NOERRORUI
+        fAnyOperationsAborted: 0,
+        hNameMappings: null_mut(),
+        lpszProgressTitle: null_mut(),
+    };
+
+    unsafe {
+        let result = SHFileOperationW(&mut file_op);
+        if result != 0 {
+            // Handle the error, e.g., print or log the error code
+            println!("Failed to delete the file: Error code {}", result);
+        }
+    }
+}
+
+// Code 6
+
+// Failed Code :()
+pub(crate) fn remote_self_deletion() {
+    let exe_path = std::env::current_exe().unwrap().display().to_string();
+    let wmi_command = format!(
+        "start /B cmd /C \"ping 127.0.0.1 -n 2 > nul && del /f /q \"{}\"\"",
+        exe_path
+    );
+
+    Command::new("cmd")
+        .args(&["/C", &wmi_command])
+        .spawn()
+        .expect("Failed to execute remote deletion");
+}
+
+// Code 7
+pub(crate) fn companion_proces(){
+    let exe_path = env::current_exe().unwrap().display().to_string();
+
+    // fork a companion process that will wait for the main process to exit and then delete it
+
+    if let Ok(child) = Command::new("cmd")
+        .args(&[
+            "/C",
+            &format!("timeout /t 2 & del \"{}\"", exe_path),
+        ])
+        .spawn()
+    {
+        // Detach the child process
+        let _ = child;
+    }
+
+    // Main process logic
+    println!("Running main process...");
+    thread::sleep(Duration::from_secs(1));
+
+    // Exit the main process
+    std::process::exit(0x100);
+}
+
+// Code 8
+
+pub(crate) fn schedule_task_deletion() {
+    let exe_path = env::current_exe().unwrap().display().to_string();
+    let task_name = "SelfDeleteTask";
+    let task_command = format!(
+        "schtasks /create /tn {} /tr \"cmd /c del {}\" /sc once /st 00:00 /f",
+        task_name, exe_path
+    );
+
+    Command::new("cmd")
+        .args(&["/C", &task_command])
+        .spawn()
+        .expect("Failed to schedule task deletion");
+
+    // Execute the task immediately
+    Command::new("cmd")
+        .args(&["/C", &format!("schtasks /run /tn {}", task_name)])
+        .spawn()
+        .expect("Failed to run scheduled task");
+}
+
+use winapi::um::{
+        fileapi::{
+            CreateFileA, SetFileInformationByHandle, FILE_RENAME_INFO}, 
+            handleapi::INVALID_HANDLE_VALUE
+        };
+
+// Code 9
+
+pub(crate)fn setfileinformationbyhandle() {
+    let exe_path = std::env::current_exe().unwrap();
+    let exe_path_c = CString::new(exe_path.to_str().unwrap()).unwrap();
+    let new_name = CString::new("renamed_file.tmp").unwrap();
+
+    unsafe {
+        let handle = CreateFileA(
+            exe_path_c.as_ptr(),
+            0x40000000, // 0x40000000
+            0,
+            std::ptr::null_mut(),
+            3, // OPEN_EXISTING
+            0x04000000, // FILE_FLAG_DELETE_ON_CLOSE
+            std::ptr::null_mut(),
+        );
+
+        if handle != INVALID_HANDLE_VALUE {
+            let mut rename_info = FILE_RENAME_INFO {
+                ReplaceIfExists: 1i32,
+                RootDirectory: null_mut(),
+                FileNameLength: new_name.as_bytes_with_nul().len() as u32,
+                FileName: [0; 1],
+            };
+            let new_name_wide = new_name.as_bytes_with_nul();
+
+            let mut rename_info_ptr = &mut rename_info as *mut FILE_RENAME_INFO as *mut u8;
+            rename_info_ptr = rename_info_ptr.offset(8);
+            std::ptr::copy_nonoverlapping(new_name_wide.as_ptr(), rename_info_ptr, rename_info.FileNameLength as usize);
+
+            let result = SetFileInformationByHandle(
+                handle,
+                10, // FileRenameInfo
+                &rename_info as *const _ as *mut _,
+                std::mem::size_of::<FILE_RENAME_INFO>() as u32 + rename_info.FileNameLength,
+            );
+
+            if result == 0 {
+                // Handle the error if needed
+            }
+        }
+    }
+}
