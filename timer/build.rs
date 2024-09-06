@@ -1,0 +1,11 @@
+use chrono::prelude::*;
+
+fn main() {
+    let now = Utc::now();
+
+    let build_date = now.format("%Y-%m-%d").to_string();
+    let build_time = now.format("%H:%M:%S").to_string();
+
+    println!("cargo:rustc-env=BUILD_DATE={}", build_date);
+    println!("cargo:rustc-env=BUILD_TIME={}", build_time);
+}
