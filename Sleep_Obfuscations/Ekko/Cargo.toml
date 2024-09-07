@@ -1,0 +1,9 @@
+[package]
+name = "Ekko"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+winapi = { version = "0.3.9", features = ["winuser","setupapi","dbghelp","wlanapi","winnls","wincon","fileapi","sysinfoapi", "threadpoollegacyapiset", "fibersapi","debugapi","winerror", "wininet" , "winhttp" ,"synchapi","securitybaseapi","wincrypt","psapi", "tlhelp32", "heapapi","shellapi", "memoryapi", "processthreadsapi", "errhandlingapi", "winbase", "handleapi", "synchapi"] }
+ntapi = "0.4.1"
+user32-sys = "0.2.0"
